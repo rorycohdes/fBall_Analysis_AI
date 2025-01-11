@@ -6,7 +6,7 @@ Tracking is asigning the same bounding box to the same object in different frame
 
 We'll match the boundintg boxes to an ID
 
-Smart tracking also track the trajectory of the object and uses color to help with this process
+Smart tracking also tracks the trajectory of the object and uses color to help with this process
 
 '''
 class Tracker:
@@ -28,10 +28,14 @@ class Tracker:
         
         detections = self.detect_frames(frames)
 
-        tracks = {
-            "players":
 
+        #for referencing
+        tracks = {
+            'players': [], # [{0: {1: {"bbox": [x1, y1, x2, y2]}}}, ... ] where each item is a frame
+            'referees': [],
+            'ball': [],
         }
+
 
         """
         The AI confuses the players with the goal keeper
@@ -57,4 +61,29 @@ class Tracker:
             # Track the objects
             detection_with_tracks = self.tracker.update_with_detections(detection_supervision)
 
-            print(detection_with_tracks)
+            tracks["players"].append({}) # {0: {1: {"bbox": [x1, y1, x2, y2]}}}
+            tracks["referees"].append({})
+            tracks["ball"].append({})
+
+
+            for frame_detection in detection_with_tracks:
+                bbox = frame_detection[0].tolist()
+                cls_id = frame_detection[3]
+                track_id = frame_detection[4]
+
+                if cls_id == cls_names_inv['player']:
+                    tracks["players"][frame_num][track_id] = {"bbox": bbox}
+
+                if cls_id == cls_names_inv['referee']:
+                    tracks["referees"][frame_num][track_id] = {"bbox": bbox}
+
+            for frame_detection in detection_supervision:
+                bbox = frame_detection[0].tolist()
+                cls_id = frame_detection[3]
+
+
+                #Only one ball
+                if cls_id == cls_names_inv['ball']:
+                    tracks["ball"][frame_num][1] = {"bbox": bbox}
+
+            return tracks
